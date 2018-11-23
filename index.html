@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <script src="http://d3js.org/d3.v3.min.js"></script>
 <script src="https://d3js.org/d3.v4.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/d3-legend/1.1.0/d3-legend.js"></script>
 <style type="text/css">
 
 /* On mouse hover, lighten state color */
@@ -43,8 +45,8 @@ body {
 </head>
 <body>
 <form>
-<label><input type="radio" name="dataset" value="Bombardier" checked> Apples</label>
-<label><input type="radio" name="dataset" value="Boeing"> Oranges</label>
+<label><input type="radio" name="dataset" value="apples" checked> Apples</label>
+<label><input type="radio" name="dataset" value="oranges"> Oranges</label>
 </form>
 <script type="text/javascript">
 
@@ -203,119 +205,138 @@ var legend = d3.select("body").append("svg")
 //======================================================================
 //======================================================================
 
+var pieData = []; //empty map {state, [Total_Fatal_Injuries,	Total_Serious_Injuries,	Total_Uninjured]}
+d3.csv("aircraft_incidents.csv", function(error, data) {
+		for (var i = 0; i < data.length; i++) {
+			// debugger;
+			// console.log(data[i]);
+			if (data[i].Country != "United States") continue;
+			var state = data[i].Location.slice(-2);
+			var a = 0, b= 0, c = 0;
+			if (data[i].Total_Fatal_Injuries != "") a = parseInt(data[i].Total_Fatal_Injuries, 10);
+			if (data[i].Total_Serious_Injuries != "") b = parseInt(data[i].Total_Serious_Injuries, 10);
+			if (data[i].Total_Uninjured != "") c = parseInt(data[i].Total_Uninjured, 10);
+			if (state in pieData) {
+					pieData[state][0]["pop"] += a;
+					pieData[state][1]["pop"] += b;
+					pieData[state][2]["pop"] += c;
+			} else {
+					var info = []
+					info[0] = {};
+					info[0]["label"] = "Total_Fatal_Injuries";
+					info[0]["pop"] = a;
+					info[1] = {}
+					info[1]["label"] = "Total_Serious_Injuries";
+					info[1]["pop"] = b;
+					info[2] = {};
+					info[2]["label"] = "Total_Uninjured";
+					info[2]["pop"] = c;
+					pieData[state] = info;
+			}
+			// console.log(pieData.state);
+		}
 
-// d3.csv("aircraft_incidents.csv", function(error, data) {
-// 			if (error) throw error;
-//
-// 			var nest = d3.nest()
-// 			  .key(function(d){
-// 			    return d.Make;
-// 			  })
-// 			  .sortKeys(d3.ascending)
-// 			  .rollup(function(leaves){
-// 			 		return d3.sum(leaves, function(d) {return (d.Total_Uninjured)});
-// 				})
-// 			  .entries(data)
-//
-// 			console.log(nest)
-// 			// Scale the range of the data
-// 			x.domain(nest.map(function(d) { return d.key; }));
-// 			y.domain([0, d3.max(nest, function(d) { return d.value; })]);
-//
-// 			// Draw the bars
-// 			svg.selectAll(".rect")
-// 			    .data(nest)
-// 			    .enter()
-// 			    .append("rect")
-// 			    	  .attr("class", "bar")
-// 			      .attr("x", function(d) { return x(d.key); })
-// 			      .attr("y", function(d) { return y(d.value); })
-// 			      .attr("width", x.bandwidth())
-// 			      .attr("height", function(d) { return height - y(d.value); });
-//
-// })
-
-
-//======================================================================
-//======================================================================
-//======================================================================
-
-
+// debugger;
+		// console.log(pieData);
+		var radius = Math.min(width, height) / 2;
 		var pcolor = d3.scale.category20();
-		var radius =  Math.min(width, height) / 2;
-		var pie = d3.layout.pie()
-						    .value(function(d) {
-									return d.apples;
-								}).sort(null);
-
+		var psvg = d3.select('body')
+		  .append('svg')
+		  .attr('width', width)
+		  .attr('height', height)
+		  .append('g')
+		  .attr('transform', 'translate(' + (width / 2) +  ',' + (height / 2) + ')');
 
 		var arc = d3.svg.arc()
 		    .innerRadius(radius - 100)
 		    .outerRadius(radius - 20);
+		// debugger;
 
-		// var labelArc = d3.arc()
-		// 	.outerRadius(radius - 20)
-		// 	.innerRadius(radius - 100);
+		// var pie = d3.pie()
+		// 	.value(function(d) { return d[1]; })
+		// 	.sort(null);
+		var pdata = pieData["KY"];
+		var pie = d3.layout.pie()
+		    .value(function(d) { return d.pop; })
+		    .sort(null);
+		// debugger;
+		console.log(pieData);
+		var path = psvg.selectAll('path')
+			  .data(pie(pdata))
+			  .enter()
+			  .append('path')
+			  .attr('d', arc)
+			  .attr('fill', function(d, i) {
+			    return pcolor(d.data.label);
+			  });
 
-		var svg2 = d3.select("body").append("svg")
-		    .attr("width", width)
-		    .attr("height", height).append("g")
-				    .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+})
+//======================================================================
+//======================================================================
+//======================================================================
 
-	d3.csv("aircraft_incidents.csv", type, function(error, data) {
-				if (error) throw error;
-
-				var nest = d3.nest()
-				  .key(function(d){
-				    return d.Make;
-				  })
-				  .sortKeys(d3.ascending)
-				  .rollup(function(leaves){
-				 		return d3.sum(leaves, function(d) {return (d.Total_Uninjured)});
-					})
-				  .entries(data)
-
-				  var path = svg2.datum(nest).selectAll("path")
-				      .data(pie)
-				    	.enter().append("path")
-				      .attr("fill", function(d, i) { return pcolor(i); })
-				      .attr("d", arc)
-				      .each(function(d) {
-								this._current = d;
-							}); // store the initial angles
-
-				  d3.selectAll("input")
-				      .on("change", change);
-
-				  var timeout = setTimeout(function() {
-				    d3.select("input[value=\"Boeing\"]").property("checked", true).each(change);
-				  }, 2000);
-
-				  function change() {
-				    var value = this.value;
-				    clearTimeout(timeout);
-				    pie.value(function(d) {
-							return d[value];
-						}); // change the value function
-				    path = path.data(pie); // compute the new angles
-				    path.transition().duration(750).attrTween("d", arcTween); // redraw the arcs
-				  }
-		});
-
-		function type(d) {
-			  d.apples = +d.apples;
-			  d.oranges = +d.oranges;
-			  return d;
-		}
-
-		function arcTween(a) {
-			  var i = d3.interpolate(this._current, a);
-			  this._current = i(0);
-			  return function(t) {
-			    return arc(i(t));
-			  };
-		}
-
+// var radius = Math.min(width, height) / 2;
+//
+// var pcolor = d3.scale.category20();
+//
+// var pie = d3.layout.pie()
+//     .value(function(d) { return d.apples; })
+//     .sort(null);
+//
+// var arc = d3.svg.arc()
+//     .innerRadius(radius - 100)
+//     .outerRadius(radius - 20);
+//
+// debugger;
+//
+// var psvg = d3.select("body").append("svg")
+//     .attr("width", width)
+//     .attr("height", height)
+//   	.append("g")
+//     .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+//
+// d3.tsv("data.tsv", type, function(error, data) {
+//   if (error) throw error;
+//
+//   var path = psvg.datum(data).selectAll("path")
+//       .data(pie)
+//     .enter().append("path")
+//       .attr("fill", function(d, i) { return pcolor(i); })
+//       .attr("d", arc)
+//       .each(function(d) { this._current = d; }); // store the initial angles
+//
+//   d3.selectAll("input")
+//       .on("change", change);
+//
+//   var timeout = setTimeout(function() {
+//     d3.select("input[value=\"oranges\"]").property("checked", true).each(change);
+//   }, 2000);
+//
+//   function change() {
+//     var value = this.value;
+//     clearTimeout(timeout);
+//     pie.value(function(d) { return d[value]; }); // change the value function
+//     path = path.data(pie); // compute the new angles
+//     path.transition().duration(750).attrTween("d", arcTween); // redraw the arcs
+//   }
+// });
+//
+// function type(d) {
+//   d.apples = +d.apples;
+//   d.oranges = +d.oranges;
+//   return d;
+// }
+//
+// // Store the displayed angles in _current.
+// // Then, interpolate from _current to the new angles.
+// // During the transition, _current is updated in-place by d3.interpolate.
+// function arcTween(a) {
+//   var i = d3.interpolate(this._current, a);
+//   this._current = i(0);
+//   return function(t) {
+//     return arc(i(t));
+//   };
+// }
 
 
 
