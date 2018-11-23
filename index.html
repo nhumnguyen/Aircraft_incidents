@@ -43,9 +43,8 @@ body {
 </head>
 <body>
 <form>
-<label><input type="radio" name="dataset" value="apples" checked> Apples</label>
-<label><input type="radio" name="dataset" value="oranges"> Oranges</label>
-<label><input type="radio" name="dataset" value="oranges"> Oranges</label>
+<label><input type="radio" name="dataset" value="Bombardier" checked> Apples</label>
+<label><input type="radio" name="dataset" value="Boeing"> Oranges</label>
 </form>
 <script type="text/javascript">
 
@@ -203,45 +202,122 @@ var legend = d3.select("body").append("svg")
 //======================================================================
 //======================================================================
 //======================================================================
-		var data = [{"letter":"q","presses":1},{"letter":"w","presses":5},{"letter":"e","presses":2}];
+
+
+// d3.csv("aircraft_incidents.csv", function(error, data) {
+// 			if (error) throw error;
+//
+// 			var nest = d3.nest()
+// 			  .key(function(d){
+// 			    return d.Make;
+// 			  })
+// 			  .sortKeys(d3.ascending)
+// 			  .rollup(function(leaves){
+// 			 		return d3.sum(leaves, function(d) {return (d.Total_Uninjured)});
+// 				})
+// 			  .entries(data)
+//
+// 			console.log(nest)
+// 			// Scale the range of the data
+// 			x.domain(nest.map(function(d) { return d.key; }));
+// 			y.domain([0, d3.max(nest, function(d) { return d.value; })]);
+//
+// 			// Draw the bars
+// 			svg.selectAll(".rect")
+// 			    .data(nest)
+// 			    .enter()
+// 			    .append("rect")
+// 			    	  .attr("class", "bar")
+// 			      .attr("x", function(d) { return x(d.key); })
+// 			      .attr("y", function(d) { return y(d.value); })
+// 			      .attr("width", x.bandwidth())
+// 			      .attr("height", function(d) { return height - y(d.value); });
+//
+// })
+
+
+//======================================================================
+//======================================================================
+//======================================================================
+
 
 		var pcolor = d3.scale.category20();
 		var radius =  Math.min(width, height) / 2;
-		var pie = d3.pie().value(function(d) { return d.presses; })(data);
+		var pie = d3.layout.pie()
+						    .value(function(d) {
+									return d.apples;
+								}).sort(null);
+
 
 		var arc = d3.svg.arc()
 		    .innerRadius(radius - 100)
 		    .outerRadius(radius - 20);
 
-		var labelArc = d3.arc()
-			.outerRadius(radius - 20)
-			.innerRadius(radius - 100);
+		// var labelArc = d3.arc()
+		// 	.outerRadius(radius - 20)
+		// 	.innerRadius(radius - 100);
 
 		var svg2 = d3.select("body").append("svg")
 		    .attr("width", width)
-		    .attr("height", height)
-		  	.append("g")
-		    .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+		    .attr("height", height).append("g")
+				    .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+
+	d3.csv("aircraft_incidents.csv", type, function(error, data) {
+				if (error) throw error;
+
+				var nest = d3.nest()
+				  .key(function(d){
+				    return d.Make;
+				  })
+				  .sortKeys(d3.ascending)
+				  .rollup(function(leaves){
+				 		return d3.sum(leaves, function(d) {return (d.Total_Uninjured)});
+					})
+				  .entries(data)
+
+				  var path = svg2.datum(nest).selectAll("path")
+				      .data(pie)
+				    	.enter().append("path")
+				      .attr("fill", function(d, i) { return pcolor(i); })
+				      .attr("d", arc)
+				      .each(function(d) {
+								this._current = d;
+							}); // store the initial angles
+
+				  d3.selectAll("input")
+				      .on("change", change);
+
+				  var timeout = setTimeout(function() {
+				    d3.select("input[value=\"Boeing\"]").property("checked", true).each(change);
+				  }, 2000);
+
+				  function change() {
+				    var value = this.value;
+				    clearTimeout(timeout);
+				    pie.value(function(d) {
+							return d[value];
+						}); // change the value function
+				    path = path.data(pie); // compute the new angles
+				    path.transition().duration(750).attrTween("d", arcTween); // redraw the arcs
+				  }
+		});
+
+		function type(d) {
+			  d.apples = +d.apples;
+			  d.oranges = +d.oranges;
+			  return d;
+		}
+
+		function arcTween(a) {
+			  var i = d3.interpolate(this._current, a);
+			  this._current = i(0);
+			  return function(t) {
+			    return arc(i(t));
+			  };
+		}
 
 
-		// var ppath = svg2.datum(data).selectAll("path")
-		// 		.data(pie)
-		// 		.enter().append("path")
-		// 		.attr("fill", function(d, i) { return pcolor(i); })
-		// 		.attr("d", arc);
 
-		var pg = svg2.selectAll("arc")
-				.data(pie)
-				.enter().append("g")
-				.attr("class", "arc");
-
-		pg.append("path")
-				.attr("d", arc)
-				.style("fill", function(d) { return pcolor(d.data.letter);});
-		pg.append("text")
-			.attr("transform", function(d) { return "translate(" + labelArc.centroid(d) + ")"; })
-			.text(function(d) { return d.data.letter;})
-			.style("fill", "#fff");
 
 </script>
 </body>
