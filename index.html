@@ -4,8 +4,8 @@
 <meta charset="utf-8">
 <script src="http://d3js.org/d3.v3.min.js"></script>
 <script src="https://d3js.org/d3.v4.min.js"></script>
-<script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
-<script src="//cdnjs.cloudflare.com/ajax/libs/d3-legend/1.1.0/d3-legend.js"></script>
+<!-- <script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/d3-legend/1.1.0/d3-legend.js"></script> -->
 <style type="text/css">
 
 /* On mouse hover, lighten state color */
@@ -25,8 +25,33 @@ div.tooltip {
 	border: 0px;
 	border-radius: 8px;
 	pointer-events: none;
+}
 
 
+div.tooltipPie {
+ 	position: absolute;
+	text-align: center;
+	width: 100px;
+	height: 30px;
+	padding: 2px;
+	font: 12px sans-serif;
+	background: white;
+	border: 0px;
+	border-radius: 8px;
+	pointer-events: none;
+}
+
+div.tooltipPie2 {
+ 	position: absolute;
+	text-align: center;
+	width: 150px;
+	height: 30px;
+	padding: 2px;
+	font: 12px sans-serif;
+	background: white;
+	border: 0px;
+	border-radius: 8px;
+	pointer-events: none;
 }
 
 /* Legend Font Style */
@@ -44,13 +69,8 @@ body {
 </style>
 </head>
 <body>
-	<form>
-  <label><input type="radio" name="state" value="GA"  checked> GA</label>
-  <label><input type="radio" name="state" value="KY" > KY</label>
-</form>
+
 <script type="text/javascript">
-
-
 //Width and height of map
 var width = 960;
 var height = 500;
@@ -81,12 +101,12 @@ var svg = d3.select("body")
 var ttdiv = d3.select("body")
 		    .append("div")
     		.attr("class", "tooltip")
-    		.style("opacity", 1);
+    		.style("opacity", 0);
 
 
-var ttheader = ttdiv.append("p")
-								.attr("class", "ttheader")
-								.style("fill", "red");
+// var ttheader = ttdiv.append("p")
+// 								.attr("class", "ttheader")
+// 								.style("fill", "red");
 
 
 	// Load GeoJSON data and merge with states data
@@ -104,8 +124,7 @@ d3.json("us-states.json", function(json) {
 				.attr("d", path)
 				.style("stroke", "#fff")
 				.style("stroke-width", "1")
-				.style("fill", "black");
-				// .on("click", clicked);
+				.style("fill", "darkslategray");
 
 
 d3.csv("aircraft_incidents.csv", function(data) {
@@ -181,64 +200,114 @@ var legend = d3.select("body").append("svg")
 
 
 //======================================================================
+//======================PIE CHART=======================================
 //======================================================================
-//======================================================================
+var stateAbbs = [];
+var makes = []; //store the make attribute of airplanes
+var pieData = []; //empty map {state, [{label: Total_Fatal_Injuries, pop: x},	{pop: Total_Serious_Injuries},	{pop: Total_Uninjured}]}
+var makeData = [];
+var makeMap = {};
 
-var pieData = []; //empty map {state, [Total_Fatal_Injuries,	Total_Serious_Injuries,	Total_Uninjured]}
 d3.csv("aircraft_incidents.csv", function(error, data) {
 		for (var i = 0; i < data.length; i++) {
-			// debugger;
-			// console.log(data[i]);
 			if (data[i].Country != "United States") continue;
-			var state = data[i].Location.slice(-2);
-			var a = 0, b= 0, c = 0;
-			if (data[i].Total_Fatal_Injuries != "") a = parseInt(data[i].Total_Fatal_Injuries, 10);
-			if (data[i].Total_Serious_Injuries != "") b = parseInt(data[i].Total_Serious_Injuries, 10);
-			if (data[i].Total_Uninjured != "") c = parseInt(data[i].Total_Uninjured, 10);
-			if (state in pieData) {
-					pieData[state][0]["pop"] += a;
-					pieData[state][1]["pop"] += b;
-					pieData[state][2]["pop"] += c;
-			} else {
-					var info = []
-					info[0] = {};
-					info[0]["label"] = "Total_Fatal_Injuries";
-					info[0]["pop"] = a;
-					info[1] = {}
-					info[1]["label"] = "Total_Serious_Injuries";
-					info[1]["pop"] = b;
-					info[2] = {};
-					info[2]["label"] = "Total_Uninjured";
-					info[2]["pop"] = c;
-					pieData[state] = info;
-			}
-			// console.log(pieData.state);
+			if (makes.indexOf(data[i].Make) > -1) continue;
+			makes.push(data[i].Make);
 		}
+		console.log(makes);
+
+		for (var i = 0; i < data.length; i++) {
+					if (data[i].Country != "United States") continue;
+					var state = data[i].Location.slice(-2);
+					if (stateAbbs.indexOf(state) < 0) stateAbbs.push(state);
+
+					// populate 1st pie chart
+					var a = 0, b= 0, c = 0;
+					if (data[i].Total_Fatal_Injuries != "") a = parseInt(data[i].Total_Fatal_Injuries, 10);
+					if (data[i].Total_Serious_Injuries != "") b = parseInt(data[i].Total_Serious_Injuries, 10);
+					if (data[i].Total_Uninjured != "") c = parseInt(data[i].Total_Uninjured, 10);
+					if (state in pieData) {
+							pieData[state][0]["pop"] += a;
+							pieData[state][1]["pop"] += b;
+							pieData[state][2]["pop"] += c;
+					} else {
+							var info = []
+							info[0] = {};
+							info[0]["label"] = "Total_Fatal_Injuries";
+							info[0]["pop"] = a;
+							info[1] = {}
+							info[1]["label"] = "Total_Serious_Injuries";
+							info[1]["pop"] = b;
+							info[2] = {};
+							info[2]["label"] = "Total_Uninjured";
+							info[2]["pop"] = c;
+							pieData[state] = info;
+					}
+
+
+					//initialize map for airplane's make
+					var curMake = data[i].Make;
+					if (state in makeMap) {
+							if (!(curMake in makeMap[state])) makeMap[state][curMake] = 0;
+							makeMap[state][curMake] += 1;
+					} else {
+						var info = {}
+						info[curMake] = 1;
+						makeMap[state] = info;
+					}
+
+				}
+
+				//populate 2nd pie CHART {state, [{label: make, pop: x}, {label: make, pop: x}, {label: make, pop: x}, etc]}
+				//["Bombardier", "Boeing", "McDonnell Douglas", "Embraer", "Airbus"]
+				for (var s in makeMap) {
+					// debugger;
+					var amake = makeMap[s]; //makes of each state
+					var info = [];
+
+					for (var m in makes) { //m = {make, #};
+						var temp = {};
+						temp["label"] = makes[m];
+						if (makes[m] in amake) {
+							temp["pop"] = amake[makes[m]];
+						} else {
+							temp["pop"] = 0;
+						}
+						info.push(temp);
+					}
+
+					makeData[s] = info;
+				}
+				console.log(makeData);
+				// debugger;
+
+		// Create a dropdown
+		var dropdown = d3.select("#makeDropdown");
+
+		var select = dropdown.append('select')
+									.attr('class','select')
+									.on('change',change);
+
+		var options = select
+				.selectAll('option')
+				.data(stateAbbs).enter()
+				.append('option')
+				.text(function (d) { return d; });
+
 		var pdata = pieData["GA"];
-		// var psvg;
-		// debugger;
-		// console.log(pieData);
 		var radius = Math.min(width, height) / 2;
 		var pcolor = d3.scale.category20();
-		// drawPie();
-
-		// d3.selectAll("input[name='state']").on("change", function(){
-    // 		pdata = pieData[this.value];
-		// 		// d3.remove(psvg);
-		// 		// drawPie();
-		// });
-
 
 		var psvg = d3.select('body')
 			.append('svg')
-			.attr('width', width)
+			.attr('width', width/2)
 			.attr('height', height)
 			.append('g')
-			.attr('transform', 'translate(' + (width / 2) +  ',' + (height / 2) + ')');
+			.attr('transform', 'translate(' + (width / 4) +  ',' + (height / 2) + ')');
 
 		var arc = d3.svg.arc()
-				.innerRadius(radius - 100)
-				.outerRadius(radius - 20);
+				.innerRadius(radius - 150)
+				.outerRadius(radius - 100);
 		// debugger;
 
 
@@ -258,62 +327,128 @@ d3.csv("aircraft_incidents.csv", function(error, data) {
 					return pcolor(d.data.label);
 				});
 
-		d3.selectAll("input")
-		      .on("change", change);
-
 		  var timeout = setTimeout(function() {
 		    d3.select("input[value=\"oranges\"]").property("checked", true).each(change);
 		  }, 2000);
 
 
 		function change() {
-		    // var value = this.value;
+			// debugger;
+		    var value = this.value;
 		    clearTimeout(timeout);
 		    pie.value(function(d) { return d.pop; }); // change the value function
-		    path = path.data(pie(pieData[this.value])); // compute the new angles
+				if (pieData[value] == null) return; //if no info found on this state, just not update
+		    path = path.data(pie(pieData[value])); // compute the new angles
 		    path.attr("d", arc); // redraw the arcs
+				change2(value); //call to change 2nd pie
   	}
 
+		// Append Div for Pie tooltip
+		var ptdiv = d3.select("body")
+				    .append("div")
+		    		.attr("class", "tooltipPie")
+		    		.style("opacity", 0);
+
+		path.on('mouseover', function(d) {
+			// debugger;
+			var text = [d.data.label + ": ", d.data.pop]
+			ptdiv.transition()
+					 .duration(200)
+					 .style("opacity", .9);
+					 ptdiv.html(text.join('<br/>'))
+							 .style("left", (d3.event.pageX) + "px")
+							 .style("top", (d3.event.pageY - 28) + "px");
+		})
+
+		path.on('mouseout', function(d) {
+			ptdiv.transition()
+				 .duration(500)
+				 .style("opacity", 0);
+		})
 
 
 
-		// function drawPie() {
-		// 			psvg = d3.select('body')
-		// 			  .append('svg')
-		// 			  .attr('width', width)
-		// 			  .attr('height', height)
-		// 			  .append('g')
-		// 			  .attr('transform', 'translate(' + (width / 2) +  ',' + (height / 2) + ')');
-		//
-		// 			var arc = d3.svg.arc()
-		// 			    .innerRadius(radius - 100)
-		// 			    .outerRadius(radius - 20);
-		// 			// debugger;
-		//
-		//
-		// 			var pie = d3.layout.pie()
-		// 			    .value(function(d) { return d.pop; })
-		// 			    .sort(null);
-		//
-		//
-		// 			// debugger;
-		// 			console.log(pdata);
-		// 			var path = psvg.selectAll('path')
-		// 				  .data(pie(pdata))
-		// 				  .enter()
-		// 				  .append('path')
-		// 				  .attr('d', arc)
-		// 				  .attr('fill', function(d, i) {
-		// 				    return pcolor(d.data.label);
-		// 				  });
-		//
-		// }
 
 
+
+		// 2nd pie chart
+		var mdata = makeData["GA"];
+		// var pcolor2 = {"Bombardier": #FFC0CB, "Boeing": #FFA500, "McDonnell Douglas": #6897BB, "Embraer": #BDB76B, "Airbus": #C0C0C0};
+		// var pcolor2 =
+		var timeout2 = setTimeout(function() {
+			d3.select("input[value=\"oranges\"]").property("checked", true).each(change);
+		}, 2000);
+		var psvg2 = d3.select('body')
+			.append('svg')
+			.attr('width', width/2)
+			.attr('height', height)
+			.append('g')
+			.attr('transform', 'translate(' + (width / 4) +  ',' + (height / 2) + ')');
+			var arc2 = d3.svg.arc()
+					.innerRadius(radius - 150)
+					.outerRadius(radius - 100);
+
+		var pie2 = d3.layout.pie()
+				.value(function(d) { return d.pop; })
+				.sort(null);
+
+		var path2 = psvg2.selectAll('path')
+				.data(pie2(mdata))
+				.enter()
+				.append('path')
+				.attr('d', arc2)
+				.attr('fill', function(d, i) {
+					return pcolor(d.data.label);
+				});
+
+
+		function change2(value) {
+			console.log(value);
+			console.log(makeData[value]);
+			// debugger;
+		    // var value = this.value;
+		    clearTimeout(timeout2);
+		    pie2.value(function(d) { return d.pop; }); // change the value function
+				if (makeData[value] == null) {
+					console.log("no data found");
+					return;
+				} //if no info found on this state, just not update
+				console.log(makeData[value]);
+				// path2 = null;
+		    path2 = path2.data(pie2(makeData[value])); // compute the new angles
+		    path2.attr("d", arc2); // redraw the arcs
+  	}
+
+		// Append Div for Pie tooltip2
+		var ptdiv2 = d3.select("body")
+				    .append("div")
+		    		.attr("class", "tooltipPie2")
+		    		.style("opacity", 0);
+
+		path2.on('mouseover', function(d) {
+			// debugger;
+			var text = [d.data.label + ": ", d.data.pop]
+			ptdiv2.transition()
+					 .duration(200)
+					 .style("opacity", .9);
+			ptdiv2.html(text.join('<br/>'))
+					 .style("left", (d3.event.pageX) + "px")
+					 .style("top", (d3.event.pageY - 28) + "px");
+		})
+
+		path2.on('mouseout', function(d) {
+			ptdiv2.transition()
+				 .duration(500)
+				 .style("opacity", 0);
+		})
 })
 
 
 
 </script>
+<body>
+	<h3>Please select a state</h3>
+    <div id = "makeDropdown"></div>
+</body>
 </body>
 </html>
