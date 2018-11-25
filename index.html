@@ -1,11 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+		<h1> Aircraft incidents in the U.S.</h1>
 <meta charset="utf-8">
 <script src="http://d3js.org/d3.v3.min.js"></script>
 <script src="https://d3js.org/d3.v4.min.js"></script>
-<!-- <script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
-<script src="//cdnjs.cloudflare.com/ajax/libs/d3-legend/1.1.0/d3-legend.js"></script> -->
 <style type="text/css">
 
 /* On mouse hover, lighten state color */
@@ -59,12 +58,45 @@ body {
 	font: 11px sans-serif;
 }
 
-/* Legend Position Style */
-.legend {
-	position:absolute;
-	left:800px;
-	top:350px;
+#pie1, #pie2
+{
+    display:inline;
 }
+
+.my-legend .legend-title {
+    text-align: left;
+    margin-bottom: 8px;
+    font-weight: bold;
+    font-size: 90%;
+    }
+  .my-legend .legend-scale ul {
+    margin: 0;
+    padding: 0;
+    float: left;
+    list-style: none;
+    }
+  .my-legend .legend-scale ul li {
+    display: block;
+    float: left;
+    width: 50px;
+    margin-bottom: 6px;
+    text-align: center;
+    font-size: 80%;
+    list-style: none;
+    }
+  .my-legend ul.legend-labels li span {
+    display: block;
+    float: left;
+    height: 15px;
+    width: 50px;
+    }
+  .my-legend a {
+    color: #777;
+    }
+
+		#makeDropdown {
+			padding:100px 0px 0px 0px;
+		}
 
 </style>
 </head>
@@ -77,23 +109,17 @@ var height = 500;
 
 // D3 Projection
 var projection = d3.geo.albersUsa()
-				   .translate([width/2, height/2])    // translate to center of screen
-				   .scale([1000]);          // scale things down so see entire US
+				   .translate([width/2, height/2])
+				   .scale([1000]);
 
 // Define path generator
-var path = d3.geo.path()               // path generator that will convert GeoJSON to SVG paths
-		  	 .projection(projection);  // tell path generator to use albersUsa projection
+var path = d3.geo.path().projection(projection);
+var dotColor = {"Non-Fatal": "Aquamarine ", "Incident": "GoldenRod ", "Unavailable": "gray"}
 
 
-// Define linear scale for output
-var color = d3.scale.linear()
-			  .range(["rgb(213,222,217)","rgb(69,173,168)","rgb(84,36,55)","rgb(217,91,67)"]);
-
-var legendText = ["Cities Lived", "States Lived", "States Visited", "Nada"];
-
-//Create SVG element and append map to the SVG
 var svg = d3.select("body")
 			.append("svg")
+			.attr("class", "USmap")
 			.attr("width", width)
 			.attr("height", height);
 
@@ -103,20 +129,11 @@ var ttdiv = d3.select("body")
     		.attr("class", "tooltip")
     		.style("opacity", 0);
 
-
-// var ttheader = ttdiv.append("p")
-// 								.attr("class", "ttheader")
-// 								.style("fill", "red");
-
-
-	// Load GeoJSON data and merge with states data
 d3.json("us-states.json", function(json) {
-			// Find the corresponding state inside the GeoJSON
 			for (var j = 0; j < json.features.length; j++)  {
 								var jsonState = json.features[j].properties.name;
 			}
 
-			// Bind the data to the SVG and create one path per GeoJSON feature
 			svg.selectAll("path")
 				.data(json.features)
 				.enter()
@@ -144,10 +161,13 @@ d3.csv("aircraft_incidents.csv", function(data) {
 					return proj[1];
 				})
 				.attr("r", function(d) {
-					// return Math.sqrt(d.Total_Uninjured) * 4;
 					return 4;
 				})
-					.style("fill", "rgb(217,91,67)")
+					.style("fill", function(d) {
+						// debugger;
+						if (d.Injury_Severity in dotColor) return dotColor[d.Injury_Severity];
+						return "red";
+					})
 					.style("opacity", 1)
 
 						.on("click", function(d) {
@@ -172,29 +192,6 @@ d3.csv("aircraft_incidents.csv", function(data) {
 				    });
 		});
 
-
-// Modified Legend Code from Mike Bostock: http://bl.ocks.org/mbostock/3888852
-var legend = d3.select("body").append("svg")
-      			.attr("class", "legend")
-     			.attr("width", 140)
-    			.attr("height", 200)
-   				.selectAll("g")
-   				.data(color.domain().slice().reverse())
-   				.enter()
-   				.append("g")
-     			.attr("transform", function(d, i) { return "translate(0," + i * 20 + ")"; });
-
-  	legend.append("rect")
-   		  .attr("width", 18)
-   		  .attr("height", 18)
-   		  .style("fill", color);
-
-  	legend.append("text")
-  		  .data(legendText)
-      	  .attr("x", 24)
-      	  .attr("y", 9)
-      	  .attr("dy", ".35em")
-      	  .text(function(d) { return d; });
 	});
 
 
@@ -298,7 +295,8 @@ d3.csv("aircraft_incidents.csv", function(error, data) {
 		var radius = Math.min(width, height) / 2;
 		var pcolor = d3.scale.category20();
 
-		var psvg = d3.select('body')
+		// var psvg = d3.select('body')
+		var psvg = d3.select("#pie1")
 			.append('svg')
 			.attr('width', width/2)
 			.attr('height', height)
@@ -327,8 +325,9 @@ d3.csv("aircraft_incidents.csv", function(error, data) {
 					return pcolor(d.data.label);
 				});
 
+
 		  var timeout = setTimeout(function() {
-		    d3.select("input[value=\"oranges\"]").property("checked", true).each(change);
+		    d3.select("input[value=\"GA\"]").property("checked", true).each(change);
 		  }, 2000);
 
 
@@ -342,6 +341,7 @@ d3.csv("aircraft_incidents.csv", function(error, data) {
 		    path.attr("d", arc); // redraw the arcs
 				change2(value); //call to change 2nd pie
   	}
+
 
 		// Append Div for Pie tooltip
 		var ptdiv = d3.select("body")
@@ -378,12 +378,14 @@ d3.csv("aircraft_incidents.csv", function(error, data) {
 		var timeout2 = setTimeout(function() {
 			d3.select("input[value=\"oranges\"]").property("checked", true).each(change);
 		}, 2000);
-		var psvg2 = d3.select('body')
+		// var psvg2 = d3.select('body')
+			var psvg2 = d3.select("#pie2")
 			.append('svg')
 			.attr('width', width/2)
 			.attr('height', height)
 			.append('g')
 			.attr('transform', 'translate(' + (width / 4) +  ',' + (height / 2) + ')');
+
 			var arc2 = d3.svg.arc()
 					.innerRadius(radius - 150)
 					.outerRadius(radius - 100);
@@ -446,9 +448,29 @@ d3.csv("aircraft_incidents.csv", function(error, data) {
 
 
 </script>
+
 <body>
-	<h3>Please select a state</h3>
-    <div id = "makeDropdown"></div>
+		<div class='my-legend'>
+		<div class='legend-scale'>
+		  <ul class='legend-labels'>
+		    <li><span style='background: #FF0000;'></span>Fatal</li>
+		    <li><span style='background:#DAA520;'></span>Incident</li>
+		    <li><span style='background:#7fffd4;'></span>Non-Fatal</li>
+		    <li><span style='background:#808080;'></span>Other</li>
+		  </ul>
+		</div>
+		</div>
+
+    <div id = "makeDropdown" style="clear: both;">
+			<h3>Please select a state</h3>
+		</div>
+		<div id = "pie1">
+			# by injured type
+
+		</div>
+		<div id = "pie2">
+			# accidents by maker
+		</div>
 </body>
 </body>
 </html>
